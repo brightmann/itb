@@ -1,8 +1,15 @@
-import { GetStaticPaths } from 'next'
+import { GetServerSideProps } from 'next'
 
 import { loadAllPostsByLocale } from 'utils/blog'
-import { enhanceStaticProps } from 'utils/next/enhanceStaticProps'
 import { HomePage, HomePageProps } from 'views/HomePage'
+
+import enCommon from '../../../public/locales/en/common.json'
+import ptCommon from '../../../public/locales/pt/common.json'
+
+const resources: Record<string, Record<string, unknown>> = {
+  pt: { common: ptCommon },
+  en: { common: enCommon },
+}
 
 export const POSTS_PER_PAGE = 5
 
@@ -10,44 +17,43 @@ type PageParams = {
   page: string
 }
 
-export const getStaticPaths: GetStaticPaths<PageParams> = async () => {
-  const { getSortedSlugs } = await import('utils/blog')
-  const locales = ['pt', 'en']
+export const getServerSideProps: GetServerSideProps<
+  HomePageProps,
+  PageParams
+> = async ({ params, locale = 'pt' }) => {
+  const page = parseInt(params?.page || '1', 10)
+  const posts = await loadAllPostsByLocale(locale, 'desc')
+  const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE)
 
-  const paths = locales.flatMap((locale) => {
-    const totalPages = Math.ceil(getSortedSlugs(locale).length / POSTS_PER_PAGE)
-    return Array.from({ length: Math.max(totalPages - 1, 0) }, (_, i) => ({
-      params: { page: String(i + 2) },
-      locale,
-    }))
-  })
+  if (!Number.isFinite(page) || page < 1 || page > totalPages) {
+    return { notFound: true }
+  }
 
-  return { paths, fallback: false }
-}
-
-export const getStaticProps = enhanceStaticProps<HomePageProps, PageParams>(
-  async ({ params, locale = 'pt' }) => {
-    const page = parseInt(params?.page || '1', 10)
-    const posts = await loadAllPostsByLocale(locale, 'desc')
-    const totalPages = Math.ceil(posts.length / POSTS_PER_PAGE)
-
-    if (page < 2 || page > totalPages) {
-      return { notFound: true }
-    }
-
-    const pagePosts = posts.slice(
-      (page - 1) * POSTS_PER_PAGE,
-      page * POSTS_PER_PAGE,
-    )
-
+  if (page === 1) {
     return {
-      props: {
-        posts: pagePosts.map(({ slug, post }) => ({ slug, data: post.data })),
-        currentPage: page,
-        totalPages,
-      },
+      redirect: { destination: '/', permanent: false },
     }
-  },
-)
+  }
+
+  const pagePosts = posts.slice(
+    (page - 1) * POSTS_PER_PAGE,
+    page * POSTS_PER_PAGE,
+  )
+
+  return {
+    props: {
+      posts: pagePosts.map(({ slug, post }) => ({ slug, data: post.data })),
+      currentPage: page,
+      totalPages,
+      _nextI18Next: {
+        initialI18nStore: {
+          [locale]: resources[locale] || resources.pt,
+        },
+        initialLocale: locale,
+        ns: ['common'],
+      },
+    } as unknown as HomePageProps,
+  }
+}
 
 export default HomePage
