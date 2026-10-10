@@ -1,5 +1,6 @@
 import React from 'react'
-import { TFunction, UseTranslationResponse } from 'react-i18next'
+import type { UseTranslationResponse } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { i18n as i18next } from 'i18next'
 
 type TransProps = {
@@ -38,7 +39,7 @@ jest.mock('react-i18next', () => {
         tFunction,
         i18n,
         true,
-      ] as UseTranslationResponse<string>
+      ] as unknown as UseTranslationResponse<string, undefined>
       translationResult.t = tFunction
       translationResult.i18n = i18n
       translationResult.ready = true

@@ -1,29 +1,45 @@
-import fs from 'fs/promises'
-import glob from 'glob'
-import matter from 'gray-matter'
 import { orderBy } from 'lodash'
-import path from 'path'
 
-import { doesFileExist } from '../server'
+import {
+  allSlugs as generatedAllSlugs,
+  generatedPosts,
+  sortedSlugs,
+} from '../../content/generated-posts'
 
-export const BLOG_FILES_FOLDER = path.join(process.cwd(), '/content/blog/')
+export const allSlugs: string[] = [...generatedAllSlugs]
+
+export type GeneratedPost = {
+  mdxSource: {
+    compiledSource: string
+    scope?: Record<string, unknown>
+    frontmatter?: Record<string, unknown>
+  }
+  data: Record<string, unknown>
+}
+
+const getLocalePosts = (locale: string): Record<string, GeneratedPost> => {
+  const posts = (
+    generatedPosts as Record<string, Record<string, GeneratedPost>>
+  )[locale]
+  return posts || {}
+}
 
 export const loadAllPostsByLocale = async (
   locale: string,
   sortDirection: 'asc' | 'desc',
-): Promise<{ post: matter.GrayMatterFile<Buffer>; slug: string }[]> => {
-  const mdxFiles = glob.sync(`${BLOG_FILES_FOLDER}**/index.${locale}.mdx`)
+): Promise<{ post: { data: Record<string, unknown> }; slug: string }[]> => {
+  const posts = getLocalePosts(locale)
+  const list = Object.entries(posts).map(([slug, p]) => ({
+    post: { data: p.data },
+    slug,
+  }))
 
-  const posts = await Promise.all(
-    mdxFiles.map(async (file) => {
-      const source = await fs.readFile(file)
-      const [slug] = file.replace(BLOG_FILES_FOLDER, '').split('/')
+  return orderBy(list, ({ post }) => post.data.date, sortDirection)
+}
 
-      return { post: matter(source), slug }
-    }),
-  )
-
-  return orderBy(posts, ({ post }) => post.data.date, sortDirection)
+export const getSortedSlugs = (locale: string): string[] => {
+  const slugs = sortedSlugs[locale] || []
+  return [...slugs]
 }
 
 type ReadPostMarkdownArgs = {
@@ -34,13 +50,10 @@ type ReadPostMarkdownArgs = {
 export const readPostMarkdown = async ({
   locale,
   slug,
-}: ReadPostMarkdownArgs): Promise<matter.GrayMatterFile<Buffer> | null> => {
-  const filename = path.join(BLOG_FILES_FOLDER, `${slug}/index.${locale}.mdx`)
-  const fileExists = await doesFileExist(filename)
-
-  if (!fileExists) return null
-
-  const source = await fs.readFile(filename)
-
-  return matter(source)
+}: ReadPostMarkdownArgs): Promise<GeneratedPost | null> => {
+  const posts = getLocalePosts(locale)
+  return posts[slug] || null
 }
+
+// Kept for compatibility; no longer points at the filesystem.
+export const BLOG_FILES_FOLDER = ''

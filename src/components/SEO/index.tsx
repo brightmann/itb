@@ -25,7 +25,7 @@ type MetaProps = React.DetailedHTMLProps<
 > &
   ({ name: string } | { property: string })
 
-export const SEO: React.FC<Props> = ({
+export const SEO: React.FC<{ children?: React.ReactNode } & Props> = ({
   children,
   pageTitle,
   description: descriptionProp,

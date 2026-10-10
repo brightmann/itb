@@ -4,7 +4,9 @@ import { MDXProvider, MDXProviderComponentsProp } from '@mdx-js/react'
 
 import { Link } from '../Link'
 
-const createHeading = (Level: 'h1' | 'h2' | 'h3' | 'h4'): React.FC => {
+const createHeading = (
+  Level: 'h1' | 'h2' | 'h3' | 'h4',
+): React.FC<{ children?: React.ReactNode }> => {
   return ({ children, ...props }) => (
     <Level {...props}>
       <span className="chunky-underline-violet-200 dark:chunky-underline-violet-600">
@@ -34,6 +36,8 @@ const components: MDXProviderComponentsProp = {
   h4: createHeading('h4'),
 }
 
-export const CustomMDXProvider: React.FC = ({ children }) => {
+export const CustomMDXProvider: React.FC<{ children?: React.ReactNode }> = ({
+  children,
+}) => {
   return <MDXProvider components={components}>{children}</MDXProvider>
 }

@@ -10,7 +10,7 @@ import { Link } from './Link'
 import { LocaleChanger } from './LocaleChanger'
 import { ThemeToggle } from './ThemeToggle'
 
-export const Layout: React.FC = (props) => {
+export const Layout: React.FC<{ children?: React.ReactNode }> = (props) => {
   const { t } = useTranslation()
   const router = useRouter()
   const isHomePage = router.pathname === '/'

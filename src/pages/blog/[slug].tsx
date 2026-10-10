@@ -1,42 +1,25 @@
-import { GetStaticPaths } from 'next'
-import { serialize } from 'next-mdx-remote/serialize'
-import fs from 'fs/promises'
-import prism from 'remark-prism'
+import { GetServerSideProps } from 'next'
+import { MDXRemoteSerializeResult } from 'next-mdx-remote'
 
-import {
-  BLOG_FILES_FOLDER,
-  loadAllPostsByLocale,
-  readPostMarkdown,
-} from 'utils/blog'
-import { enhanceStaticProps } from 'utils/next/enhanceStaticProps'
+import { loadAllPostsByLocale, readPostMarkdown } from 'utils/blog'
 import { BlogPost, BlogPostProps } from 'views/BlogPost'
+
+import enCommon from '../../../public/locales/en/common.json'
+import ptCommon from '../../../public/locales/pt/common.json'
+
+const resources: Record<string, Record<string, unknown>> = {
+  pt: { common: ptCommon },
+  en: { common: enCommon },
+}
 
 type BlogPostPathParams = {
   slug: string
 }
 
-export const getStaticPaths: GetStaticPaths<BlogPostPathParams> = async ({
-  defaultLocale = 'pt',
-  locales = [defaultLocale],
-}) => {
-  const files = await fs.readdir(BLOG_FILES_FOLDER)
-  const paths = files.flatMap((slug) => {
-    return locales.map((locale) => ({
-      params: { slug },
-      locale,
-    }))
-  })
-
-  return {
-    paths,
-    fallback: false,
-  }
-}
-
-export const getStaticProps = enhanceStaticProps<
+export const getServerSideProps: GetServerSideProps<
   BlogPostProps,
   BlogPostPathParams
->(async ({ params, locale = 'pt' }) => {
+> = async ({ params, locale = 'pt' }) => {
   const slug = params?.slug
 
   const markdown = slug && (await readPostMarkdown({ locale, slug }))
@@ -53,28 +36,31 @@ export const getStaticProps = enhanceStaticProps<
     return isValidIndex ? allPosts[i] : null
   })
 
-  const { content, data } = markdown
-  const mdxSource = await serialize(content, {
-    scope: data,
-    mdxOptions: { remarkPlugins: [prism] },
-  })
+  const { mdxSource, data } = markdown
 
   return {
     props: {
-      source: mdxSource,
+      source: mdxSource as MDXRemoteSerializeResult<Record<string, unknown>>,
       frontMatter: data,
       links: {
         next: nextPost && {
           slug: nextPost.slug,
-          title: nextPost.post.data.title,
+          title: nextPost.post.data.title as string,
         },
         previous: previousPost && {
           slug: previousPost.slug,
-          title: previousPost.post.data.title,
+          title: previousPost.post.data.title as string,
         },
       },
-    },
+      _nextI18Next: {
+        initialI18nStore: {
+          [locale]: resources[locale] || resources.pt,
+        },
+        initialLocale: locale,
+        ns: ['common'],
+      },
+    } as unknown as BlogPostProps,
   }
-})
+}
 
 export default BlogPost

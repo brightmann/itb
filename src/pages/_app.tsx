@@ -4,6 +4,8 @@ import { appWithTranslation } from 'next-i18next'
 
 import { Layout } from 'components/Layout'
 
+import nextI18NextConfig from '../../next-i18next.config'
+
 import 'tailwindcss/tailwind.css'
 import 'styles/main.scss'
 import '@fontsource/lora/variable.css'
@@ -26,4 +28,4 @@ function MyApp({ Component, pageProps }: AppProps) {
   )
 }
 
-export default appWithTranslation(MyApp)
+export default appWithTranslation(MyApp, nextI18NextConfig)

@@ -37,3 +37,5 @@ yarn-error.log*
 .cache
 .eslintcache
 tsconfig.tsbuildinfo
+.open-next
+.next
