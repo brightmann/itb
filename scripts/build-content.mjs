@@ -1,21 +1,42 @@
 // Precompiles blog posts at build time so pages can serve them on
-// Cloudflare Workers without fs access at request time.
+// Cloudflare Workers without fs access or `new Function` at request time.
 // Run before `next build` / `opennextjs-cloudflare build`.
 // Output: src/content/generated-posts.ts
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
-import { serialize } from 'next-mdx-remote/serialize'
+import { remark } from 'remark'
+import remarkRehype from 'remark-rehype'
+import rehypeStringify from 'rehype-stringify'
+import remarkGfm from 'remark-gfm'
 import prism from 'remark-prism'
 
 const BLOG_DIR = path.join(process.cwd(), 'content', 'blog')
-const OUT_FILE = path.join(process.cwd(), 'src', 'content', 'generated-posts.ts')
+const OUT_FILE = path.join(
+  process.cwd(),
+  'src',
+  'content',
+  'generated-posts.ts',
+)
 const LOCALES = ['pt', 'en']
 
 const slugs = fs.readdirSync(BLOG_DIR).filter((d) => {
   const full = path.join(BLOG_DIR, d)
-  return fs.statSync(full).isDirectory() && LOCALES.some((l) => fs.existsSync(path.join(full, `index.${l}.mdx`)))
+  return (
+    fs.statSync(full).isDirectory() &&
+    LOCALES.some((l) => fs.existsSync(path.join(full, `index.${l}.mdx`)))
+  )
 })
+
+async function markdownToHtml(content) {
+  const file = await remark()
+    .use(remarkGfm)
+    .use(prism)
+    .use(remarkRehype, { allowDangerousHtml: true })
+    .use(rehypeStringify, { allowDangerousHtml: true })
+    .process(content)
+  return String(file)
+}
 
 const posts = {}
 
@@ -26,11 +47,8 @@ for (const locale of LOCALES) {
     if (!fs.existsSync(file)) continue
     const raw = fs.readFileSync(file, 'utf8')
     const { content, data } = matter(raw)
-    const mdxSource = await serialize(content, {
-      scope: data,
-      mdxOptions: { remarkPlugins: [prism] },
-    })
-    posts[locale][slug] = { mdxSource, data }
+    const html = await markdownToHtml(content)
+    posts[locale][slug] = { html, data }
   }
 }
 

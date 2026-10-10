@@ -9,11 +9,7 @@ import {
 export const allSlugs: string[] = [...generatedAllSlugs]
 
 export type GeneratedPost = {
-  mdxSource: {
-    compiledSource: string
-    scope?: Record<string, unknown>
-    frontmatter?: Record<string, unknown>
-  }
+  html: string
   data: Record<string, unknown>
 }
 

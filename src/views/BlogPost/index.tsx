@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import { useTranslation } from 'next-i18next'
-import { MDXRemote, MDXRemoteSerializeResult } from 'next-mdx-remote'
 
 import { SEO } from 'components/SEO'
 import { useDateFormatter } from 'utils/dates/useDateFormatter'
@@ -8,7 +7,7 @@ import { useDateFormatter } from 'utils/dates/useDateFormatter'
 import { LinksToOtherPosts, PostLink } from './LinksToOtherPosts'
 
 export type BlogPostProps = {
-  source: MDXRemoteSerializeResult<Record<string, unknown>>
+  source: { html: string }
   frontMatter: Partial<{
     title: string
     description: string
@@ -114,7 +113,7 @@ export const BlogPost: React.FC<BlogPostProps> = ({
             </p>
           )}
         </header>
-        <MDXRemote {...source} />
+        <div dangerouslySetInnerHTML={{ __html: source.html }} />
       </article>
 
       <nav className="p-4 pt-8 mt-8 border-t-2">

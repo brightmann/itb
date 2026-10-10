@@ -1,5 +1,4 @@
 import { GetServerSideProps } from 'next'
-import { MDXRemoteSerializeResult } from 'next-mdx-remote'
 
 import { loadAllPostsByLocale, readPostMarkdown } from 'utils/blog'
 import { BlogPost, BlogPostProps } from 'views/BlogPost'
@@ -36,11 +35,11 @@ export const getServerSideProps: GetServerSideProps<
     return isValidIndex ? allPosts[i] : null
   })
 
-  const { mdxSource, data } = markdown
+  const { html, data } = markdown
 
   return {
     props: {
-      source: mdxSource as MDXRemoteSerializeResult<Record<string, unknown>>,
+      source: { html },
       frontMatter: data,
       links: {
         next: nextPost && {
