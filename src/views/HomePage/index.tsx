@@ -2,6 +2,7 @@ import React from 'react'
 import { NextPage } from 'next'
 
 import { Link } from 'components/Link'
+import { Pagination } from 'components/Pagination'
 import { useDateFormatter } from 'utils/dates/useDateFormatter'
 import { BlogPostProps } from 'views/BlogPost'
 
@@ -10,9 +11,15 @@ export type HomePageProps = {
     data: BlogPostProps['frontMatter']
     slug: string
   }[]
+  currentPage?: number
+  totalPages?: number
 }
 
-export const HomePage: NextPage<HomePageProps> = ({ posts }) => {
+export const HomePage: NextPage<HomePageProps> = ({
+  posts,
+  currentPage = 1,
+  totalPages = 1,
+}) => {
   const formatDate = useDateFormatter({
     day: 'numeric',
     month: 'long',
@@ -56,6 +63,7 @@ export const HomePage: NextPage<HomePageProps> = ({ posts }) => {
           )
         })}
       </ul>
+      <Pagination currentPage={currentPage} totalPages={totalPages} />
     </>
   )
 }
